@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renewable Energy Visualization</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Renewable Energy % by Country</h1>
+    
+    <label for="region">Select Region:</label>
+    <select id="region">
+        <option value="Africa_renewable_energy_chart.json">Africa</option>
+        <option value="Asia_renewable_energy_chart.json">Asia</option>
+        <option value="Europe_renewable_energy_chart.json">Europe</option>
+        <option value="North_America_renewable_energy_chart.json">North America</option>
+        <option value="South_America_renewable_energy_chart.json">South America</option>
+        <option value="Oceania_renewable_energy_chart.json">Oceania</option>
+    </select>
+
+    <label for="year">Select Year:</label>
+    <select id="year">
+        <!-- Year options will be populated dynamically -->
+    </select>
+
+    <div id="chart" style="width: 100%; height: 100%;"></div>
+
+    <script>
+        const yearSelect = document.getElementById('year');
+        const regionSelect = document.getElementById('region');
+
+        // Load the years from the JSON file when the region is selected
+        function loadYears() {
+            const region = regionSelect.value;
+            fetch(region)
+                .then(response => response.json())
+                .then(data => {
+                    yearSelect.innerHTML = ''; // Clear existing options
+                    data.data.forEach((item) => {
+                        // Adding year options based on the data length
+                        const yearOption = document.createElement('option');
+                        yearOption.value = item.name; // Use the year as value
+                        yearOption.textContent = item.name; // Display the year
+                        yearSelect.appendChild(yearOption);
+                    });
+                    loadChart(); // Load chart for the first year by default
+                })
+                .catch(error => console.error('Error loading region data:', error));
+        }
+
+        // Load the chart when the year is selected
+        function loadChart() {
+            const region = regionSelect.value;
+            const year = yearSelect.value;
+
+            fetch(region)
+                .then(response => response.json())
+                .then(data => {
+                    // Find the selected year's data
+                    const chartData = data.data.find(item => item.name === year);
+                    if (chartData) {
+                        const trace = {
+                            x: chartData.x,
+                            y: chartData.y,
+                            type: 'bar',
+                            orientation: 'h',
+                            text: chartData.hovertext,
+                            hoverinfo: 'text',
+                            marker: {
+                                color: chartData.x, // Using the renewable energy % for color mapping
+                                colorscale: 'Viridis', // Apply the same color scale as in Python
+                                colorbar: {
+                                    title: 'Renewable Energy %'
+                                },
+                                cmin: 0,
+                                cmax: 100,
+                            },
+                        };
+
+                        const layout = {
+                            title: `Renewable Energy % in ${region.replace('.json', '').replace('_', ' ').toUpperCase()} - ${year}`,
+                            xaxis: { title: 'Renewable Energy %' },
+                            yaxis: { title: 'Country' },
+                        };
+
+                        Plotly.newPlot('chart', [trace], layout);
+                    }
+                })
+                .catch(error => console.error('Error loading chart data:', error));
+        }
+
+        // Event listeners
+        regionSelect.addEventListener('change', () => {
+            loadYears(); // Load years when region changes
+        });
+
+        yearSelect.addEventListener('change', loadChart); // Load chart when year changes
+
+        // Initialize the page
+        loadYears(); // Load years for the default selected region
+    </script>
+</body>
+</html>
